@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoGestión Verde: probar casos de uso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* Paleta tomada del PET reciclado: verde botella, el verde agua del plástico y el blanco mineral */
+  :root {
+    --fondo: #EAF1EF;
+    --papel: #FFFFFF;
+    --tinta: #17302A;
+    --tinta-suave: #4F6A63;
+    --linea: #C9D8D3;
+    --pet: #23877E;
+    --pet-claro: #D3EBE7;
+    --ok: #2E7D4F;
+    --ok-claro: #DDF0E3;
+    --aviso: #9A6A06;
+    --aviso-claro: #FBEFD2;
+    --error: #A93434;
+    --error-claro: #F8E0E0;
+    --radio: 10px;
+    --mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--tinta);
+    font-family: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  button, input { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--pet); outline-offset: 2px; }
+
+  /* ---------- Cabecera ---------- */
+  header {
+    background: var(--tinta);
+    color: #EAF1EF;
+    padding: 28px 24px 0;
+  }
+  .contenedor { max-width: 1080px; margin: 0 auto; }
+  .marca { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .marca h1 {
+    margin: 0;
+    font-size: clamp(30px, 5vw, 46px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variation-settings: "opsz" 96;
+  }
+  .marca p { margin: 0; color: #A9C7BF; }
+  .pestanas { display: flex; gap: 6px; margin-top: 24px; }
+  .pestana {
+    border: 0;
+    background: transparent;
+    color: #A9C7BF;
+    padding: 12px 18px;
+    border-radius: var(--radio) var(--radio) 0 0;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .pestana[aria-selected="true"] { background: var(--fondo); color: var(--tinta); }
+  .pestana small { display: block; font-weight: 400; font-size: 13px; opacity: .8; }
+
+  main { padding: 28px 24px 60px; }
+
+  /* ---------- Selector de cliente ---------- */
+  .cliente {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 16px 24px;
+    align-items: start;
+    margin-bottom: 28px;
+  }
+  .cliente label { font-weight: 600; padding-top: 10px; }
+  .cliente-fila { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .cliente input {
+    width: 90px;
+    padding: 9px 12px;
+    border: 2px solid var(--linea);
+    border-radius: var(--radio);
+    background: var(--papel);
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .atajos { display: flex; gap: 8px; flex-wrap: wrap; }
+  .atajo {
+    border: 1px solid var(--linea);
+    background: var(--papel);
+    border-radius: 999px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 15px;
+    text-align: left;
+  }
+  .atajo span { color: var(--tinta-suave); }
+  .atajo[aria-pressed="true"] { border-color: var(--pet); background: var(--pet-claro); }
+
+  /* ---------- Paneles ---------- */
+  .panel {
+    background: var(--papel);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio);
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .panel h2 { margin: 0 0 4px; font-size: 24px; letter-spacing: -0.01em; }
+  .panel .ayuda { margin: 0 0 18px; color: var(--tinta-suave); max-width: 70ch; }
+  .acciones { display: flex; gap: 12px; flex-wrap: wrap; }
+  .boton {
+    border: 0;
+    border-radius: var(--radio);
+    padding: 12px 20px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--pet);
+    color: #fff;
+  }
+  .boton:hover { background: #1C6F67; }
+  .boton.secundario { background: transparent; color: var(--tinta); border: 2px solid var(--linea); }
+  .boton.secundario:hover { border-color: var(--pet); }
+  .boton:disabled { opacity: .45; cursor: not-allowed; }
+  [hidden] { display: none !important; }
+
+  /* ---------- Tablas ---------- */
+  .tabla-scroll { overflow-x: auto; margin: 18px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 16px; }
+  th { text-align: left; font-weight: 600; color: var(--tinta-suave); padding: 8px 10px; border-bottom: 2px solid var(--linea); }
+  td { padding: 10px; border-bottom: 1px solid var(--linea); vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.falta td { background: var(--aviso-claro); }
+  tbody tr.clickable { cursor: pointer; }
+  tbody tr.clickable:hover td { background: var(--pet-claro); }
+  tbody tr.elegido td { background: var(--pet-claro); }
+
+  .chip {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    background: var(--pet-claro);
+    color: var(--tinta);
+  }
+  .chip.aviso { background: var(--aviso-claro); color: var(--aviso); }
+  .chip.ok { background: var(--ok-claro); color: var(--ok); }
+  .chip.error { background: var(--error-claro); color: var(--error); }
+
+  /* ---------- Totales ---------- */
+  .totales {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin: 6px 0 20px;
+  }
+  .total { border-left: 4px solid var(--linea); padding: 4px 0 4px 14px; }
+  .total .valor { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .total .rotulo { color: var(--tinta-suave); font-size: 15px; }
+  .total.destacado { border-color: var(--pet); }
+  .total.destacado.sena { border-color: var(--aviso); }
+
+  /* ---------- Mensajes ---------- */
+  .mensaje { border-radius: var(--radio); padding: 14px 18px; margin: 14px 0; }
+  .mensaje strong { display: block; }
+  .mensaje ul { margin: 6px 0 0; padding-left: 20px; }
+  .mensaje.ok { background: var(--ok-claro); }
+  .mensaje.aviso { background: var(--aviso-claro); }
+  .mensaje.error { background: var(--error-claro); }
+  .mensaje.info { background: var(--pet-claro); }
+
+  /* ---------- Pedido confirmado ---------- */
+  .ticket {
+    border: 2px dashed var(--ok);
+    border-radius: var(--radio);
+    padding: 20px;
+    margin-top: 18px;
+    background: var(--ok-claro);
+  }
+  .ticket .numero { font-size: 40px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+  .ticket dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 18px; margin: 14px 0; }
+  .ticket dt { color: var(--tinta-suave); }
+  .ticket dd { margin: 0; font-weight: 600; }
+
+  /* ---------- Detalle del estado ---------- */
+  .estado-detalle { margin-top: 18px; border-top: 2px solid var(--linea); padding-top: 18px; }
+  .estado-detalle h3 { margin: 0 0 10px; font-size: 22px; }
+  .info-complementaria {
+    font-size: 18px;
+    background: var(--pet-claro);
+    border-radius: var(--radio);
+    padding: 16px 18px;
+    margin-top: 12px;
+    max-width: 75ch;
+  }
+
+  /* ---------- Intercambio HTTP: lo que se ve de la API ---------- */
+  .http {
+    margin-top: 20px;
+    border-radius: var(--radio);
+    background: var(--tinta);
+    color: #DCEAE6;
+    overflow: hidden;
+  }
+  .http summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 12px 16px;
+    font-family: var(--mono);
+    font-size: 14px;
+    flex-wrap: wrap;
+  }
+  .http summary::-webkit-details-marker { display: none; }
+  .http .metodo { font-weight: 600; color: #8FE0D3; }
+  .http .codigo { margin-left: auto; font-weight: 600; padding: 2px 10px; border-radius: 6px; }
+  .codigo.c2 { background: #2E7D4F; color: #fff; }
+  .codigo.c4 { background: #C98A12; color: #1b1300; }
+  .codigo.c5 { background: #A93434; color: #fff; }
+  .http pre {
+    margin: 0;
+    padding: 14px 16px 18px;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.55;
+    max-height: 360px;
+    overflow: auto;
+    border-top: 1px solid #2D4A43;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .vacio { color: var(--tinta-suave); }
+
+  @media (max-width: 640px) {
+    .cliente { grid-template-columns: 1fr; }
+    .cliente label { padding-top: 0; }
+    .panel { padding: 18px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .aparece { animation: aparece .25s ease-out; }
+    @keyframes aparece { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="contenedor">
+    <div class="marca">
+      <h1>EcoGestión Verde</h1>
+      <p>Probar los casos de uso de la primera iteración</p>
+    </div>
+    <div class="pestanas" role="tablist" aria-label="Casos de uso">
+      <button class="pestana" role="tab" id="tab-comprar" aria-controls="vista-comprar" aria-selected="true">
+        Comprar <small>CU-05</small>
+      </button>
+      <button class="pestana" role="tab" id="tab-consultar" aria-controls="vista-consultar" aria-selected="false">
+        Consultar mis pedidos <small>CU-09</small>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="contenedor">
+
+    <!-- Cliente identificado: la precondición de los dos casos de uso -->
+    <section class="cliente" aria-label="Cliente identificado">
+      <label for="idCliente">Cliente identificado</label>
+      <div>
+        <div class="cliente-fila">
+          <input type="number" id="idCliente" min="0" value="1" inputmode="numeric">
+          <div class="atajos" id="atajos"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CU-05 Comprar ===================== -->
+    <section id="vista-comprar" role="tabpanel" aria-labelledby="tab-comprar">
+      <div class="panel">
+        <h2>Finalizar la compra</h2>
+        <p class="ayuda">Primero se ve el resumen del carrito con el total y el importe a abonar. La compra se registra recién al confirmar.</p>
+        <div class="acciones">
+          <button class="boton" id="btnResumen">Ver resumen de la compra</button>
+          <button class="boton secundario" id="btnConfirmar" disabled>Confirmar compra</button>
+        </div>
+        <div id="resultadoComprar" aria-live="polite"></div>
+        <div id="httpComprar"></div>
+      </div>
+    </section>
+
+    <!-- ===================== CU-09 Consultar estado ===================== -->
+    <section id="vista-consultar" role="tabpanel" aria-labelledby="tab-consultar" hidden>
+      <div class="panel">
+        <h2>Mis pedidos</h2>
+        <p class="ayuda">Elegí un pedido de la lista para ver su estado y lo que corresponde según el estado.</p>
+        <div class="acciones">
+          <button class="boton" id="btnListar">Consultar mis pedidos</button>
+        </div>
+        <div id="resultadoListar" aria-live="polite"></div>
+        <div id="resultadoEstado" aria-live="polite"></div>
+        <div id="httpConsultar"></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+  // Clientes de data.sql, con el escenario que cubre cada uno
+  const CLIENTES = [
+    { id: 1, nombre: 'Ana',     escenario: 'camino feliz' },
+    { id: 2, nombre: 'Bruno',   escenario: 'falta stock' },
+    { id: 3, nombre: 'Carla',   escenario: 'producto dado de baja' },
+    { id: 4, nombre: 'Diego',   escenario: 'nada publicado' },
+    { id: 5, nombre: 'Elena',   escenario: 'carrito vacío, sin pedidos' },
+    { id: 6, nombre: 'Federico', escenario: 'pedidos en cada estado' }
+  ];
+
+  const ESTADOS = {
+    PENDIENTE_DE_PAGO:     { texto: 'Pendiente de pago',     tono: 'aviso' },
+    EN_COLA_DE_PRODUCCION: { texto: 'En cola de producción', tono: '' },
+    EN_PRODUCCION:         { texto: 'En producción',         tono: '' },
+    CONFIRMADO:            { texto: 'Confirmado',            tono: 'ok' },
+    LISTO_PARA_DESPACHO:   { texto: 'Listo para despacho',   tono: 'ok' },
+    DESPACHADO:            { texto: 'Despachado',            tono: 'ok' },
+    EN_TRANSITO:           { texto: 'En tránsito',           tono: 'ok' },
+    ENTREGADO:             { texto: 'Entregado',             tono: 'ok' },
+    CANCELADO:             { texto: 'Cancelado',             tono: 'error' }
+  };
+
+  const $ = id => document.getElementById(id);
+  const pesos = n => Number(n).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+  const fecha = t => t ? new Date(t).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short', hour12: false }) : '';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const chipEstado = e => {
+    const info = ESTADOS[e] || { texto: e, tono: '' };
+    return `<span class="chip ${info.tono}">${esc(info.texto)}</span>`;
+  };
+
+  // ---------- Llamada a la API, guardando el intercambio para mostrarlo ----------
+  async function llamar(metodo, url) {
+    const respuesta = await fetch(url, { method: metodo, headers: { Accept: 'application/json' } });
+    let cuerpo = null;
+    try { cuerpo = await respuesta.json(); } catch (e) { cuerpo = null; }
+    return { metodo, url, status: respuesta.status, ok: respuesta.ok, cuerpo };
+  }
+
+  function mostrarHttp(destino, r) {
+    const clase = r.status >= 500 ? 'c5' : r.status >= 400 ? 'c4' : 'c2';
+    $(destino).innerHTML = `
+      <details class="http">
+        <summary>
+          <span class="metodo">${r.metodo}</span><span>${esc(r.url)}</span>
+          <span class="codigo ${clase}">${r.status}</span>
+        </summary>
+        <pre>${esc(JSON.stringify(r.cuerpo, null, 2))}</pre>
+      </details>`;
+  }
+
+  function mensajeError(r) {
+    const e = r.cuerpo || {};
+    const detalles = (e.detalles || []).length
+      ? `<ul>${e.detalles.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : '';
+    return `<div class="mensaje error aparece"><strong>${esc(e.titulo || 'Error ' + r.status)}</strong>${esc(e.mensaje || 'No se pudo completar la operación.')}${detalles}</div>`;
+  }
+
+  function errorDeRed(destino) {
+    $(destino).innerHTML = `<div class="mensaje error"><strong>No hay conexión con la API</strong>Fijate que la aplicación esté corriendo en http://localhost:8080.</div>`;
+  }
+
+  // ---------- Cliente ----------
+  function idCliente() { return $('idCliente').value.trim(); }
+
+  function pintarAtajos() {
+    $('atajos').innerHTML = CLIENTES.map(c => `
+      <button class="atajo" data-id="${c.id}" aria-pressed="${String(c.id) === idCliente()}">
+        <strong>${c.id}</strong> ${esc(c.nombre)}, <span>${esc(c.escenario)}</span>
+      </button>`).join('');
+  }
+
+  $('atajos').addEventListener('click', ev => {
+    const b = ev.target.closest('.atajo');
+    if (!b) return;
+    $('idCliente').value = b.dataset.id;
+    cambioDeCliente();
+  });
+  $('idCliente').addEventListener('input', cambioDeCliente);
+
+  function cambioDeCliente() {
+    pintarAtajos();
+    $('btnConfirmar').disabled = true;
+    ['resultadoComprar', 'httpComprar', 'resultadoListar', 'resultadoEstado', 'httpConsultar']
+      .forEach(id => $(id).innerHTML = '');
+  }
+
+  // ---------- Pestañas ----------
+  function mostrarVista(cual) {
+    const comprar = cual === 'comprar';
+    $('tab-comprar').setAttribute('aria-selected', comprar);
+    $('tab-consultar').setAttribute('aria-selected', !comprar);
+    $('vista-comprar').hidden = !comprar;
+    $('vista-consultar').hidden = comprar;
+  }
+  $('tab-comprar').addEventListener('click', () => mostrarVista('comprar'));
+  $('tab-consultar').addEventListener('click', () => mostrarVista('consultar'));
+
+  // =====================================================================
+  // CU-05 Comprar
+  // =====================================================================
+  $('btnResumen').addEventListener('click', async () => {
+    $('btnConfirmar').disabled = true;
+    let r;
+    try { r = await llamar('GET', `/api/pedidos/resumen-compra/${idCliente()}`); }
+    catch (e) { return errorDeRed('resultadoComprar'); }
+    mostrarHttp('httpComprar', r);
+
+    if (!r.ok) { $('resultadoComprar').innerHTML = mensajeError(r); return; }
+
+    const d = r.cuerpo;
+    const filas = d.items.map(i => {
+      const p = i.producto;
+      const falta = p.stockDisponible < i.cantidad;
+      return `
+        <tr class="${falta ? 'falta' : ''}">
+          <td>${esc(p.nombre)}${falta ? `<br><span class="chip aviso">Stock disponible: ${p.stockDisponible}${p.tiempoEstimadoProduccion ? `, se fabrica en ${p.tiempoEstimadoProduccion} días` : ''}</span>` : ''}</td>
+          <td class="num">${pesos(p.precio)}</td>
+          <td class="num">${i.cantidad}</td>
+          <td class="num">${pesos(i.subtotal)}</td>
+        </tr>`;
+    }).join('');
+
+    const sena = !d.hayStockSuficiente;
+    $('resultadoComprar').innerHTML = `
+      <div class="aparece">
+        <div class="tabla-scroll">
+          <table>
+            <thead><tr><th>Producto</th><th class="num">Precio unitario</th><th class="num">Cantidad</th><th class="num">Subtotal</th></tr></thead>
+            <tbody>${filas}</tbody>
+          </table>
+        </div>
+        <div class="totales">
+          <div class="total"><div class="valor">${pesos(d.montoTotal)}</div><div class="rotulo">Total general</div></div>
+          <div class="total destacado ${sena ? 'sena' : ''}">
+            <div class="valor">${pesos(d.importeAAbonar)}</div>
+            <div class="rotulo">${sena ? 'Seña del 30 % a abonar' : 'Importe a abonar (100 %)'}</div>
+          </div>
+          <div class="total"><div class="valor">${d.plazoReservaHoras} h</div><div class="rotulo">Reserva del stock al confirmar</div></div>
+        </div>
+        ${sena ? `<div class="mensaje aviso"><strong>Falta stock de algunos productos</strong>Los productos marcados se fabrican a pedido. Se abona una seña del 30 % y el saldo cuando se complete la producción.</div>` : ''}
+      </div>`;
+    $('btnConfirmar').disabled = false;
+  });
+
+  $('btnConfirmar').addEventListener('click', async () => {
+    $('btnConfirmar').disabled = true;
+    let r;
+    try { r = await llamar('POST', `/api/pedidos/confirmar-compra/${idCliente()}`); }
+    catch (e) { return errorDeRed('resultadoComprar'); }
+    mostrarHttp('httpComprar', r);
+
+    if (!r.ok) { $('resultadoComprar').innerHTML = mensajeError(r); return; }
+
+    const p = r.cuerpo;
+    const parcial = p.detalles.filter(det => det.cantidadReservada < det.cantidad);
+    $('resultadoComprar').innerHTML = `
+      <div class="ticket aparece">
+        <div>Pedido registrado</div>
+        <div class="numero">N.º ${p.idPedido}</div>
+        <dl>
+          <dt>Estado</dt><dd>${chipEstado(p.estado)}</dd>
+          <dt>Importe a abonar</dt><dd>${pesos(p.importeAAbonar)} de ${pesos(p.montoTotal)}</dd>
+          <dt>Pagar antes del</dt><dd>${fecha(p.vencimientoReserva)}</dd>
+          <dt>Productos</dt><dd>${p.cantidadProductos} unidades</dd>
+        </dl>
+        ${parcial.length ? `<p>Se reservó solo el stock disponible de: ${parcial.map(det => `${esc(det.producto.nombre)} (${det.cantidadReservada} de ${det.cantidad})`).join(', ')}.</p>` : ''}
+        <button class="boton" id="btnVerEstado">Ver el estado de este pedido</button>
+      </div>`;
+
+    // Integración entre los dos casos de uso: el pedido nuevo se consulta en CU-09
+    $('btnVerEstado').addEventListener('click', async () => {
+      mostrarVista('consultar');
+      await listarPedidos();
+      await consultarEstado(p.idPedido);
+    });
+  });
+
+  // =====================================================================
+  // CU-09 Consultar estado del pedido
+  // =====================================================================
+  $('btnListar').addEventListener('click', listarPedidos);
+
+  async function listarPedidos() {
+    $('resultadoEstado').innerHTML = '';
+    let r;
+    try { r = await llamar('GET', `/api/cu09/usuarios/${idCliente()}/pedidos`); }
+    catch (e) { return errorDeRed('resultadoListar'); }
+    mostrarHttp('httpConsultar', r);
+
+    if (!r.ok) { $('resultadoListar').innerHTML = mensajeError(r); return; }
+
+    const pedidos = r.cuerpo.data || [];
+    if (!pedidos.length) {
+      $('resultadoListar').innerHTML = `<div class="mensaje info aparece"><strong>Todavía no hay pedidos</strong>${esc(r.cuerpo.message)} Para generar uno, confirmá una compra en la pestaña Comprar.</div>`;
+      return;
+    }
+    $('resultadoListar').innerHTML = `
+      <div class="tabla-scroll aparece">
+        <table>
+          <thead><tr><th>Pedido</th><th>Fecha y hora</th><th>Estado</th><th class="num">Monto total</th></tr></thead>
+          <tbody>
+            ${pedidos.map(p => `
+              <tr class="clickable" tabindex="0" data-id="${p.idPedido}">
+                <td><strong>N.º ${p.idPedido}</strong></td>
+                <td>${fecha(p.fechaHora)}</td>
+                <td>${chipEstado(p.estado)}</td>
+                <td class="num">${pesos(p.montoTotal)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }
+
+  $('resultadoListar').addEventListener('click', ev => {
+    const fila = ev.target.closest('tr[data-id]');
+    if (fila) consultarEstado(fila.dataset.id);
+  });
+  $('resultadoListar').addEventListener('keydown', ev => {
+    const fila = ev.target.closest('tr[data-id]');
+    if (fila && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); consultarEstado(fila.dataset.id); }
+  });
+
+  async function consultarEstado(idPedido) {
+    document.querySelectorAll('#resultadoListar tr[data-id]')
+      .forEach(f => f.classList.toggle('elegido', f.dataset.id === String(idPedido)));
+    let r;
+    try { r = await llamar('GET', `/api/cu09/usuarios/${idCliente()}/pedidos/${idPedido}/estado`); }
+    catch (e) { return errorDeRed('resultadoEstado'); }
+    mostrarHttp('httpConsultar', r);
+
+    if (!r.ok) { $('resultadoEstado').innerHTML = mensajeError(r); return; }
+
+    const d = r.cuerpo.data;
+    $('resultadoEstado').innerHTML = `
+      <div class="estado-detalle aparece">
+        <h3>Pedido N.º ${d.idPedido} ${chipEstado(d.estado)}</h3>
+        <div>Realizado el ${fecha(d.fechaHora)}, por un total de ${pesos(d.montoTotal)}.</div>
+        <div class="info-complementaria">${esc(d.informacionComplementaria)}</div>
+      </div>`;
+  }
+
+  pintarAtajos();
+</script>
+</body>
+</html>
