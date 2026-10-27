@@ -226,7 +226,6 @@ public class PedidoController {
             operationId = "listarPedidos",
             summary = "Parte 1: listar los pedidos del cliente",
             description = """
-                    Mensajes [1] a [12] del diagrama de secuencia de CU-09.
 
                     Presenta los pedidos del cliente con identificador, fecha y hora, monto total y estado. \
                     Si el cliente no tiene pedidos, `data` viene vacío y `message` lo informa (FA-01).""")
@@ -256,7 +255,7 @@ public class PedidoController {
             operationId = "consultarEstado",
             summary = "Parte 2: consultar el estado de un pedido",
             description = """
-                    Mensajes [13] a [26] del diagrama de secuencia de CU-09.
+                   
 
                     Verifica que el pedido pertenezca al cliente (RN-01) y devuelve su estado vigente con sus datos \
                     principales. En `informacionComplementaria` agrega lo que corresponde según el estado:
