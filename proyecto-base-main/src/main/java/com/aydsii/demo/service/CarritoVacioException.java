@@ -14,7 +14,7 @@ public class CarritoVacioException extends RuntimeException {
 
     /** Mensaje del FE-02 cuando ningún producto del carrito sigue publicado. */
     public static final String NINGUN_PRODUCTO_PUBLICADO = "Los productos del carrito ya no están publicados en el "
-            + "catálogo y se quitaron del detalle, por lo que el carrito quedó vacío (FE-02).";
+            + "catálogo y se quitaron del detalle, por lo que el carrito quedó vacío.";
 
     private final List<String> productosNoDisponibles;
 

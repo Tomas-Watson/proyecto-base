@@ -14,6 +14,6 @@ public class AccesoDenegadoException extends RuntimeException {
 
     public static AccesoDenegadoException pedidoAjeno(Long idUsuario, Long idPedido) {
         return new AccesoDenegadoException("El pedido " + idPedido + " no pertenece al cliente " + idUsuario
-                + ". Un cliente solo puede consultar sus propios pedidos (RN-01).");
+                + ". Un cliente solo puede consultar sus propios pedidos.");
     }
 }

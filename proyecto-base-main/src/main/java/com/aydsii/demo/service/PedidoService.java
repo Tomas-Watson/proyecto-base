@@ -180,12 +180,12 @@ public class PedidoService {
 
     @Transactional(readOnly = true)
     public EstadoPedidoDTO consultarEstado(Long idPedido, Long idUsuario) {
-        Pedido pedido = pedidoRepository.findById(idPedido)
-                .orElseThrow(() -> new RuntimeException("Pedido no encontrado"));
+               Pedido pedido = pedidoRepository.findById(idPedido)
+                .orElseThrow(() -> RecursoNoEncontradoException.pedido(idPedido));
 
         // Validar que el pedido pertenezca al usuario (RN-01)
         if (!pedido.getCliente().getIdUsuario().equals(idUsuario)) {
-            throw new RuntimeException("No autorizado para consultar este pedido");
+            throw AccesoDenegadoException.pedidoAjeno(idUsuario, idPedido);
         }
 
         // Obtenemos el estado como String usando .name() del Enum ya que previamente realizamos el codigo por separado y al unirlo debimos adaptar el codigo
