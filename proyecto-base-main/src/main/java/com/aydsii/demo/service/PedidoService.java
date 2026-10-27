@@ -198,30 +198,64 @@ public class PedidoService {
                 pedido.getMontoTotal() != null ? pedido.getMontoTotal().doubleValue() : 0.0
         );
 
-        // Lógica de los flujos alternativos evaluando los nombres del Enum
+        // Lógica avanzada de los flujos alternativos (aportando la info completa de tu compañero)
+        List<String> informacion = new ArrayList<>();
+        
         if ("PENDIENTE_DE_PAGO".equals(estadoStr)) {
-            dto.setInformacionComplementaria(
-                "Importe a abonar: 100% del total. " +
-                "Todavía puedes cancelar este pedido."
-            );
+            boolean esSena = pedido.getImporteAAbonar() != null && pedido.getMontoTotal() != null 
+                    && pedido.getImporteAAbonar().compareTo(pedido.getMontoTotal()) < 0;
+            informacion.add("Importe a abonar: $" + pedido.getImporteAAbonar()
+                    + (esSena ? " (seña del 30 %, falta stock de productos que se fabrican a pedido)."
+                              : " (100 % del total)."));
+            LocalDateTime vencimiento = pedido.getVencimientoReserva();
+            if (vencimiento != null && vencimiento.isAfter(LocalDateTime.now())) {
+                informacion.add("Plazo para pagar: hasta el " + vencimiento.format(FORMATO_FECHA)
+                        + " (vence la reserva de stock).");
+            } else if (vencimiento != null) {
+                informacion.add("La reserva de stock venció el " + vencimiento.format(FORMATO_FECHA)
+                        + ": si no se confirma el pago, el pedido se cancela (RN-04).");
+            }
+            informacion.add("Todavía podés cancelar el pedido.");
+            
         } else if ("EN_PRODUCCION".equals(estadoStr) || "EN_COLA_DE_PRODUCCION".equals(estadoStr)) {
-            dto.setInformacionComplementaria(
-                "El pedido se encuentra en producción. " +
-                "El saldo restante del 70% se abonará al completar la fabricación. " +
-                "Verifica las condiciones de cancelación y reembolso de seña."
-            );
+            Integer dias = null;
+            if (pedido.getDetalles() != null) {
+                for (DetallePedido detalle : pedido.getDetalles()) {
+                    Integer diasProducto = detalle.getProducto().getTiempoEstimadoProduccion();
+                    if (detalle.getCantidadReservada() < detalle.getCantidad() && diasProducto != null
+                            && (dias == null || diasProducto > dias)) {
+                        dias = diasProducto;
+                    }
+                }
+            }
+            if (dias != null) {
+                informacion.add("Tiempo estimado de producción: " + dias + " días.");
+            }
+            BigDecimal saldo = pedido.getMontoTotal() != null && pedido.getImporteAAbonar() != null
+                    ? pedido.getMontoTotal().subtract(pedido.getImporteAAbonar())
+                    : BigDecimal.ZERO;
+            informacion.add("El saldo restante de $" + saldo
+                    + " (70 %) podrá abonarse cuando se complete la producción.");
+            informacion.add("EN_COLA_DE_PRODUCCION".equals(estadoStr)
+                    ? "Todavía podés cancelar el pedido: se te reembolsaría el 100 % de la seña (RN-04)."
+                    : "Todavía podés cancelar el pedido, pero la seña no se reembolsa porque ya está en producción (RN-04).");
+                    
         } else if ("CANCELADO".equals(estadoStr)) {
-            dto.setInformacionComplementaria(
-                "Este pedido fue cancelado. Consulta la fecha de cancelación y el estado del reembolso."
-            );
+            informacion.add(pedido.getFechaCancelacion() != null
+                    ? "El pedido fue cancelado el " + pedido.getFechaCancelacion().format(FORMATO_FECHA) + "."
+                    : "El pedido fue cancelado.");
+                    
         } else if (estadoStr.contains("DESPACHADO") || estadoStr.contains("ENTREGADO") || estadoStr.contains("LISTO")) {
-            dto.setInformacionComplementaria(
-                "El detalle del envío puede consultarse en el módulo 'Consultar estado del envío'."
-            );
+            informacion.add("El detalle del envío puede consultarse en «Consultar estado del envío».");
+            
+        } else if ("CONFIRMADO".equals(estadoStr)) {
+            informacion.add("El pago está completo. El pedido ya no se puede cancelar.");
+            
         } else {
-            dto.setInformacionComplementaria("Estado actual registrado correctamente en el sistema.");
+            informacion.add("Estado actual registrado correctamente en el sistema.");
         }
 
+        dto.setInformacionComplementaria(String.join(" ", informacion));
         return dto;
     }
 }
