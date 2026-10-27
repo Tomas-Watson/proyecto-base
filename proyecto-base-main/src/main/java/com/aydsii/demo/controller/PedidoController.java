@@ -32,7 +32,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-@OpenAPIDefinition(info = @Info(title = "EcoGestión Verde · API", version = "1.0.0",
+@OpenAPIDefinition(info = @Info(title = "VerdeGreen · API", version = "1.0.0",
         description = PedidoController.DESCRIPCION_API),
         tags = {
                 @Tag(name = PedidoController.TAG_COMPRAR, description = "Caso de uso Comprar (CU-05)."),
@@ -44,7 +44,7 @@ public class PedidoController {
     static final String TAG_CONSULTAR = "2. Consultar estado del pedido (CU-09)";
 
     static final String DESCRIPCION_API = """
-            API del sistema **EcoGestión Verde** de VerdeGreen. """;
+            API del sistema VerdeGreen. """;
 
     private static final String DESCRIPCION_ID_CLIENTE = "Identificador del cliente que realiza la compra";
     private static final String DESCRIPCION_ID_USUARIO = "Identificador del cliente que consulta sus pedidos";
